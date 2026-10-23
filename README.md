@@ -235,7 +235,7 @@ La comprobación utiliza entradas sintéticas y verifica readiness, paridad offl
 
 ## 9. API con Docker
 
-El Codespace necesita Docker Engine y Compose. La configuración `.devcontainer` incorpora Docker-in-Docker; en un Codespace creado antes de este cambio ejecuta **Codespaces: Rebuild Container** para aplicarla. Comprueba `docker info` y `docker compose version`.
+El Codespace necesita Docker Engine y Compose. La configuración `.devcontainer` incorpora Docker-in-Docker y una imagen de desarrollo que retira la fuente APT obsoleta de Yarn (no utilizada); en un Codespace creado antes de este cambio ejecuta **Codespaces: Rebuild Container** para aplicarla. Comprueba `docker info` y `docker compose version`.
 
 Entrena primero para disponer de `models/model.joblib`. Utiliza esta ruta como alternativa al servidor local; ambos usan el puerto 8000.
 

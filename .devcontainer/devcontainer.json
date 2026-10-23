@@ -1,6 +1,5 @@
 {
   "name": "Loan renewal \u00b7 Python 3.12",
-  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
   "postCreateCommand": "python -m venv .venv && .venv/bin/python -m pip install -e '.[dev,api,mlops]' && .venv/bin/python -m ipykernel install --user --name loan-renewal --display-name \"Loan renewal (.venv)\"",
   "customizations": {
     "vscode": {
@@ -15,5 +14,8 @@
   },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "build": {
+    "dockerfile": "Dockerfile"
   }
 }

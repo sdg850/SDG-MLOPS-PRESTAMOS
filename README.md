@@ -194,7 +194,7 @@ Después de generar el primer run, inicia la interfaz en otra terminal con `.ven
 make mlflow
 ```
 
-Si el puerto está ocupado, usa `make mlflow MLFLOW_PORT=5001`. Abre `http://127.0.0.1:5000` (o el puerto elegido). En Codespaces, usa el puerto **5000** de la pestaña **Ports**. El experimento predeterminado es `loan-renewal`; permite consultar parámetros, métricas de validación, métricas finales, artefactos y versiones registradas.
+Si el puerto está ocupado, usa `make mlflow MLFLOW_PORT=5001`. Abre `http://127.0.0.1:5000` (o el puerto elegido). En Codespaces, usa el puerto **5000** de la pestaña **Ports**. `make mlflow` permite únicamente localhost y, en Codespaces, el hostname exacto del puerto reenviado; no desactiva la protección de hosts. El experimento predeterminado es `loan-renewal`; permite consultar parámetros, métricas de validación, métricas finales, artefactos y versiones registradas.
 
 El historial anterior de `reports/tracking/` se migró a `mlruns/` conservando SQLite, registros y artefactos. `scripts/migrate_tracking.py` existe para instalaciones antiguas: requiere que no haya tracking activo, crea un respaldo y rechaza sobrescribir un destino con estado existente. No se necesita en una instalación nueva.
 

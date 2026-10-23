@@ -47,6 +47,8 @@ Validación desde una copia aislada del proyecto, con instalación nueva mediant
 | Inferencia | CLI `predict` genera CSV; API HTTP pasa readiness, paridad con bundle y campo ausente 422 |
 | MLflow UI | `make mlflow MLFLOW_PORT=15001` responde HTTP 200; un worker para reducir recursos |
 | DVC | `version-data --dvc`, `make dvc`, `dvc status` y segundo `make dvc` sin cambios completados |
-| Docker | Se detectó Docker ausente y falta de permisos para el bridge del daemon en el contenedor actual. `.devcontainer` incorpora Docker-in-Docker; requiere reconstrucción antes de validar el contenedor |
+| Docker | Codespace reconstruido con Docker-in-Docker; `make docker`, `compose ps`, logs y `down` completados. Contenedor saludable; readiness 200, paridad offline/HTTP y campo ausente 422 |
 
 `make check-data` comprueba la presencia del CSV antes de los recorridos de entrenamiento, notebook y DVC. `make api API_PORT=8001` y `make mlflow MLFLOW_PORT=5001` permiten elegir puertos libres. No se detienen servicios ajenos para liberar puertos.
+
+La reconstrucción detectó una fuente APT de Yarn obsoleta en la imagen base. `.devcontainer/Dockerfile` la retira antes de instalar Features, sin desactivar la verificación de firmas. Se comprobó que MLflow rechazaba el hostname reenviado con HTTP 403; `make mlflow` permite el hostname exacto del Codespace y mantiene el rechazo de hosts ajenos.

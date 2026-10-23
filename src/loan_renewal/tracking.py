@@ -183,6 +183,7 @@ def track_report(report, output_dir, tracking_uri=None, experiment="loan-renewal
             "dataset_sha256": manifest["dataset_sha256"],
             "protocol_id": protocol,
             "selection_partition": "validation",
+            "test_evaluation": manifest.get("test_evaluation", "legacy_completed"),
             "task": manifest.get("task", "commercial_loan_renewal_propensity_educational"),
             "probe_origin": "synthetic_not_customer_data",
         }
@@ -196,7 +197,7 @@ def track_report(report, output_dir, tracking_uri=None, experiment="loan-renewal
                 "candidate_count": manifest.get("selection", {}).get("candidate_count", len(report.get("candidates", []))),
                 "search_method": manifest.get("tuning", {}).get("method", "disabled"),
             })
-            mlflow.log_metrics({**_finite_metrics(validation, "validation"), **_finite_metrics(report.get("test", {}), "test_report")})
+            mlflow.log_metrics({**_finite_metrics(validation, "validation"), **_finite_metrics(report.get("test") or {}, "test_report")})
             mlflow.log_dict(manifest, "evidence/manifest.json")
             mlflow.log_dict(report, "evidence/training_report.json")
             mlflow.log_dict(protocol_details(manifest), "evidence/selection_protocol.json")

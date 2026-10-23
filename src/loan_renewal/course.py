@@ -34,7 +34,7 @@ def main(action, argv=None):
         from .tracking import track_report
         destination = output / method
         report_destination = reports / method
-        report = train(args.data, destination, report_dir=report_destination, tune=method != "base", search_method="random" if method == "random" else "grid")
+        report = train(args.data, destination, report_dir=report_destination, evaluate_test=False, tune=method != "base", search_method="random" if method == "random" else "grid")
         record = track_report(report, report_destination, tracking_uri=uri, experiment=args.experiment)
         _write(report_destination / "tracking.json", record)
         return record
@@ -48,6 +48,11 @@ def main(action, argv=None):
         identity = json.loads(source.read_text())
         records = compare_runs(uri, experiment=args.experiment,
                                dataset_sha256=identity["dataset_sha256"], protocol_id=identity["protocol_id"])
+        # Scope comparison to explicit experiment records in this directory.
+        run_ids = {json.loads(path.read_text())["run_id"]
+                   for name in ("base", "grid", "random")
+                   if (path := reports / name / "tracking.json").exists()}
+        records = [record for record in records if record["run_id"] in run_ids]
         if not records:
             raise ValueError("No finished comparable runs with valid validation metrics.")
         _write(reports / "comparison_runs.json", records)
@@ -58,28 +63,50 @@ def main(action, argv=None):
         _write(reports / "best_run.json", record)
         return record
 
+    def evaluate():
+        from .final_evaluation import evaluate_selected_run, publish_final_evaluation
+        source = reports / "best_run.json"
+        if not source.exists():
+            raise FileNotFoundError("Run experiments best before evaluate.")
+        selected = json.loads(source.read_text())
+        receipt = evaluate_selected_run(selected, args.data, reports / "final_evaluation.json", uri)
+        publish_final_evaluation(selected, receipt, uri)
+        return receipt
+
     def registry():
         from .experimentos import registrar_modelo
         source = reports / "best_run.json"
         if not source.exists():
             raise FileNotFoundError("Run experiments best before registry.")
         selected = json.loads(source.read_text())
+        from .final_evaluation import require_final_evaluation
+        receipt_path = reports / "final_evaluation.json"
+        if not receipt_path.exists():
+            raise FileNotFoundError("Run experiments evaluate before registry.")
+        require_final_evaluation(selected, json.loads(receipt_path.read_text()))
         record = registrar_modelo(selected["model_uri"], args.registry_name,
                                   alias=args.alias, tracking_uri=uri, threshold=selected["threshold"])
         _write(reports / "registry.json", record)
         return record
 
+    if action in {"base", "grid", "random", "best"} and (reports / "final_evaluation.json").exists():
+        raise FileExistsError("Selection is frozen after final evaluation; reuse evaluate or registry.")
     if action in {"base", "grid", "random"}:
         result = execute_experiment(action)
     elif action == "compare":
         result = compare()
     elif action == "best":
         result = best()
+    elif action == "evaluate":
+        result = evaluate()
     elif action == "registry":
         result = registry()
     elif action == "all":
+        if (reports / "final_evaluation.json").exists():
+            raise FileExistsError("Final evaluation already exists. Use evaluate to reuse it or registry to register that winner; do not rerun selection after viewing test.")
         result = {method: execute_experiment(method) for method in ("base", "grid", "random")}
         result["best"] = best()
+        result["final_evaluation"] = evaluate()
         result["registry"] = registry()
     else:
         raise ValueError(f"Unknown course action: {action}")

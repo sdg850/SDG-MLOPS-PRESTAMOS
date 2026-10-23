@@ -51,7 +51,7 @@ def _git_state():
         return {"commit": None, "worktree_dirty": None}
 
 
-def _partition_manifest(partitions):
+def _partition_manifest(partitions, include_test_labels=True):
     result = {}
     for name, frame in partitions.items():
         result[name] = {
@@ -61,6 +61,9 @@ def _partition_manifest(partitions):
             "positive_rate": float(frame["FLAG_VENTA"].mean()),
             "row_indices_sha256": hashlib.sha256(np.asarray(frame.index, dtype="int64").tobytes()).hexdigest(),
         }
+        if name == "test" and not include_test_labels:
+            result[name].pop("positive_count")
+            result[name].pop("positive_rate")
     return result
 
 
@@ -109,9 +112,10 @@ def fit_candidates(train_frame, validation_frame, random_state=42, include_clust
     return winner, results
 
 
-def train(data_path, output_dir, random_state=42, include_cluster=True, include_smote=False, include_xgboost=False, tune=False, search_method="grid", report_dir=None):
-    """Train a complete raw-input artifact and evaluate the selected candidate once.
+def train(data_path, output_dir, random_state=42, include_cluster=True, include_smote=False, include_xgboost=False, tune=False, search_method="grid", report_dir=None, evaluate_test=True):
+    """Fit/select on train/validation, optionally evaluating one standalone winner.
 
+    Experiments pass evaluate_test=False and defer scoring to final_evaluation.
     Validation and threshold search use July/August. September is reserved for
     the final report of the selected candidate. The winning pipeline remains
     fitted on Jan-Jun, without an undisclosed train+validation refit.
@@ -119,15 +123,17 @@ def train(data_path, output_dir, random_state=42, include_cluster=True, include_
     started = time.perf_counter()
     data_path, output_dir = Path(data_path), Path(output_dir)
     frame = load_dataset(data_path)
-    validation_report = validate_dataset(frame)
     partitions = split_temporal(frame)
+    validation_report = validate_dataset(frame if evaluate_test else pd.concat([partitions["train"], partitions["validation"]]))
     winner, results = fit_candidates(
         partitions["train"], partitions["validation"], random_state,
         include_cluster, include_smote, include_xgboost, tune, search_method,
     )
     # Only the chosen estimator sees the test features, and only for inference.
-    test_probability = positive_probability(winner["pipeline"], partitions["test"].loc[:, FEATURE_COLUMNS])
-    test_metrics = evaluate_binary(partitions["test"]["FLAG_VENTA"], test_probability, winner["threshold"])
+    test_metrics = None
+    if evaluate_test:
+        test_probability = positive_probability(winner["pipeline"], partitions["test"].loc[:, FEATURE_COLUMNS])
+        test_metrics = evaluate_binary(partitions["test"]["FLAG_VENTA"], test_probability, winner["threshold"])
     manifest = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "task": "commercial_loan_renewal_propensity_educational",
@@ -136,7 +142,7 @@ def train(data_path, output_dir, random_state=42, include_cluster=True, include_
         "dataset_sha256": file_sha256(data_path),
         "dataset_filename": data_path.name,
         "dataset_validation": validation_report,
-        "partitions": _partition_manifest(partitions),
+        "partitions": _partition_manifest(partitions, include_test_labels=evaluate_test),
         "raw_features": list(FEATURE_COLUMNS),
         "excluded_columns": ["FLAG_VENTA", "MES", "CLIENTE"],
         "random_state": int(random_state),
@@ -144,6 +150,7 @@ def train(data_path, output_dir, random_state=42, include_cluster=True, include_
         "winner": winner["name"],
         "sampling": winner["sampling"],
         "threshold": float(winner["threshold"]),
+        "test_evaluation": "completed" if evaluate_test else "deferred_until_global_selection",
         "selection": {
             "partition": "validation",
             "primary_metric": "f1_class_1",
@@ -173,7 +180,7 @@ def train(data_path, output_dir, random_state=42, include_cluster=True, include_
     joblib.dump(bundle, model_path, compress=3)
     # Persistence is verified against the exact raw-input path.
     reloaded = joblib.load(model_path)
-    probe = partitions["test"].loc[:, FEATURE_COLUMNS].head(16)
+    probe = partitions["validation"].loc[:, FEATURE_COLUMNS].head(16)
     np.testing.assert_allclose(positive_probability(reloaded["pipeline"], probe), positive_probability(winner["pipeline"], probe), rtol=1e-12, atol=1e-12)
     np.testing.assert_array_equal(positive_probability(reloaded["pipeline"], probe) >= winner["threshold"], positive_probability(winner["pipeline"], probe) >= winner["threshold"])
     manifest["artifact_sha256"] = file_sha256(model_path)
@@ -192,5 +199,5 @@ def train(data_path, output_dir, random_state=42, include_cluster=True, include_
     (report_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
     scalar_rows = [{key: value for key, value in row.items() if not isinstance(value, (dict, list))} for row in results]
     pd.DataFrame(scalar_rows).to_csv(report_dir / "comparison.csv", index=False)
-    LOGGER.info("Winner %s; final test F1=%.4f; artifact %s", winner["name"], test_metrics["f1"], model_path)
+    LOGGER.info("Winner %s; test evaluation %s; artifact %s", winner["name"], manifest["test_evaluation"], model_path)
     return {"model_path": str(model_path), "metrics_path": str(report_dir / "metrics.json"), "comparison_path": str(report_dir / "comparison.csv"), **report}

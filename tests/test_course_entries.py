@@ -29,7 +29,7 @@ class UnifiedEntryTests(unittest.TestCase):
             "train", "predict", "pipeline", "version-data", "check-env", "experiments",
         )]
         entries.extend(["experiments", action, "--help"] for action in (
-            "base", "grid", "random", "compare", "best", "registry", "all",
+            "base", "grid", "random", "compare", "best", "evaluate", "registry", "all",
         ))
         with tempfile.TemporaryDirectory() as directory:
             for arguments in entries:

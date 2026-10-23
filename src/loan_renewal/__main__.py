@@ -43,7 +43,7 @@ def main(argv=None):
         if args.command == 'check-env':
             from .environment import main as run
             return run(delegated)
-        choices = ['base', 'grid', 'random', 'compare', 'best', 'registry', 'all']
+        choices = ['base', 'grid', 'random', 'compare', 'best', 'evaluate', 'registry', 'all']
         action_parser = argparse.ArgumentParser(description='Tracked experiments and candidate Registry')
         action_parser.add_argument('action', choices=choices)
         action, rest = action_parser.parse_known_args(delegated)

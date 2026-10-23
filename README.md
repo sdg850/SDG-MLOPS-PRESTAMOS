@@ -146,13 +146,16 @@ Ejecuta los scripts en este orden, o utiliza el orquestador completo:
 | `pipelines/03_randomsearch_mlflow.py` | Ejecutar la alternativa RandomizedSearchCV. |
 | `pipelines/04_comparar_runs.py` | Comparar runs finalizados con igual dataset y protocolo. |
 | `pipelines/05_mejor_modelo.py` | Guardar el run seleccionado por validación. |
+| `pipelines/05_evaluar_ganador.py` | Evaluar una vez el ganador global en test, sin ajustar el modelo ni el umbral. |
 | `pipelines/06_model_registry.py` | Crear una versión en Registry y asignarle el alias `candidato`. |
-| `pipelines/run_pipeline.py` | Ejecutar base, grid, random, selección y registro en una sola secuencia. |
+| `pipelines/run_pipeline.py` | Ejecutar base, grid, random, comparación, evaluación final y registro. |
 | `pipelines/run_training.py` | Ejecutar las etapas de un entrenamiento; es la entrada utilizada por Make y DVC. |
 
 ```bash
 python pipelines/run_pipeline.py
 ```
+
+Esta secuencia sigue **entrenar → comparar → evaluar ganador → registrar**. Base, grid y random usan entrenamiento/validación y dejan `test: null` en sus informes; solo el ganador global se evalúa en septiembre. La comparación se limita a los runs identificados en el directorio de informes actual.
 
 Esta secuencia entrena tres experimentos. Sus modelos quedan en `models/experiments/` y su evidencia en `reports/experiments/`. Los scripts admiten `--help`, `--data`, `--output`, `--reports`, `--experiment` y `--tracking-uri`; la implementación actual utiliza SQLite local para Tracking y Registry.
 
@@ -161,8 +164,15 @@ Para registrar un candidato ya seleccionado, sin repetir los entrenamientos:
 ```bash
 python pipelines/04_comparar_runs.py
 python pipelines/05_mejor_modelo.py
+python pipelines/05_evaluar_ganador.py
 python pipelines/06_model_registry.py
 ```
+
+La evaluación guarda `reports/experiments/final_evaluation.json`, vinculado al run, URI exacta del modelo, hash del dataset, protocolo y umbral. `experiments evaluate` reutiliza ese comprobante sin volver a predecir; solo el ganador recibe métricas `test_report_*` en MLflow. El registro rechaza comprobantes ausentes o que no correspondan al ganador. Después de evaluar, `all`, los entrenamientos individuales y `best` se bloquean en ese directorio para no volver a seleccionar tras observar test; `evaluate` y `registry` permiten continuar.
+
+Un bloqueo concurrente protege la evaluación. No borrar el comprobante ni el archivo `.lock` para reintentar una evaluación en curso. Una nueva ruta de informes no convierte un test ya observado en independiente: para una evaluación prospectiva se necesitan campañas no usadas.
+
+`make pipeline`, `make notebook` y el comando `train` conservan su recorrido de entrenamiento individual y evaluación de un único ganador; no es necesario ejecutarlos después del recorrido completo de experimentos.
 
 Estos comandos requieren resultados previos de los experimentos. La selección exige igualdad de hash de datos y protocolo y usa métricas de validación. El registro conserva la URI de origen, el umbral y la paridad de recarga.
 

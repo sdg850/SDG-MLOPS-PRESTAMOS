@@ -24,7 +24,7 @@ El notebook llama a las mismas funciones que los comandos. Los scripts de `pipel
 | `api/` | Servicio HTTP: `app.py` define la aplicación y `schemas.py` sus contratos de entrada y salida. |
 | `pipelines/` | Scripts numerados de experimentación y orquestadores. No contienen copias del modelo. |
 | `src/loan_renewal/` | Núcleo reutilizable: datos, features, modelos, evaluación, inferencia, tracking y orquestación. |
-| `data/raw/` | CSV original privado y su puntero DVC. La fuente no se modifica durante el entrenamiento. |
+| `data/raw/` | CSV de referencia versionado directamente en Git. La fuente no se modifica durante el entrenamiento. |
 | `data/interim/` | Espacio reservado para datos intermedios; el flujo actual no exige materializarlos. |
 | `data/processed/` | Espacio reservado para datasets derivados. |
 | `data/external/` | Espacio reservado para fuentes externas. |
@@ -51,14 +51,14 @@ Los directorios de salidas se completan al ejecutar los comandos
 | `Makefile` | Atajos de instalación, pruebas, entrenamiento, notebook, API, Docker y DVC. |
 | `Dockerfile` / `compose.yaml` | Construcción y ejecución del servicio con el modelo montado como solo lectura. |
 | `dvc.yaml` / `dvc.lock` | Etapa reproducible y huellas de sus dependencias y salidas. |
-| `.gitignore` / `.dvcignore` / `.dockerignore` | Exclusiones de datos privados, metadatos generados y cachés según cada herramienta. |
+| `.gitignore` / `.dvcignore` / `.dockerignore` | Exclusiones de salidas, metadatos generados, datos adicionales y cachés. |
 
 ## 3. Requisitos e instalación
 
 - Python **3.12** recomendado; el paquete admite Python `>=3.11,<3.14`.
 - Git y `make`; los comandos de esta guía se ejecutan en Bash desde la raíz del repositorio.
 - Docker Engine y Docker Compose para la alternativa en contenedor.
-- Acceso autorizado al CSV original: sus registros no están publicados en Git.
+- El clon incluye el CSV de referencia; no requiere descarga manual ni remoto DVC.
 
 Comenzar con un clon nuevo:
 
@@ -82,9 +82,9 @@ python -m ipykernel install --user --name loan-renewal --display-name "Loan rene
 
 SMOTE y XGBoost son opcionales: `python -m pip install -e '.[smote,xgboost]'` agrega sus dependencias al entorno ya preparado.
 
-## 4. Preparar los datos
+## 4. Datos incluidos en el clon
 
-Coloca el archivo autorizado en:
+El repositorio incluye la fuente de referencia en:
 
 ```text
 data/raw/Dataset Renovacion_prestamo.csv
@@ -245,7 +245,7 @@ docker compose ps
 python scripts/check_service.py
 ```
 
-`make docker` construye la imagen y espera al healthcheck. Compose monta `models/` en modo de solo lectura y expone `127.0.0.1:8000`. Los modelos y datos privados no forman parte de las capas de la imagen.
+`make docker` construye la imagen y espera al healthcheck. Compose monta `models/` en modo de solo lectura y expone `127.0.0.1:8000`. Los modelos y el CSV no forman parte de las capas de la imagen.
 
 ```bash
 docker compose logs --tail=100 api
@@ -264,11 +264,11 @@ make dvc
 dvc status
 ```
 
-El primer comando calcula la identidad de la fuente y ejecuta `dvc add`. `make dvc` reproduce la etapa `training` declarada en `dvc.yaml`, utilizando el Python de `.venv`. Si dependencias y salidas no cambiaron, DVC omite el entrenamiento.
+El primer comando calcula la identidad de la fuente. Si está versionada en Git, conserva ese mecanismo y no ejecuta `dvc add`; para una fuente distinta sin seguimiento Git, puede crear un puntero DVC. `make dvc` reproduce la etapa `training` declarada en `dvc.yaml`, utilizando el Python de `.venv`. Si dependencias y salidas no cambiaron, DVC omite el entrenamiento.
 
 DVC declara el bundle y la evidencia de entrenamiento como salidas, y `reports/training/metrics.json` como métricas sin caché. La base y los artefactos mutables de MLflow se conservan aparte en `mlruns/` y requieren respaldo propio.
 
-Git guarda código, punteros y `dvc.lock`; los bytes de datos y modelos permanecen en caché local o en un remoto que se configure por separado. **No hay un remoto DVC configurado por este proyecto**: un clon con un puntero no garantiza recuperar el CSV mediante `dvc pull`. No se ejecuta `dvc push` automáticamente.
+Git guarda código, CSV de referencia y `dvc.lock`. DVC utiliza ese CSV como dependencia y reproduce modelos e informes. No se necesita `dvc pull` para obtener la fuente. **No hay un remoto DVC configurado**: las salidas se regeneran con `make dvc`; no se ejecuta `dvc push` automáticamente.
 
 ## 11. Protocolo y límites de interpretación
 
@@ -305,4 +305,20 @@ El notebook histórico ya exploró todo el CSV. Repetir estas ejecuciones reprod
 | [Validación en Codespaces](docs/validacion.md) | Evidencia fechada de comandos, 39 pruebas, notebook, API, MLflow, Registry y requisitos de Docker/DVC. |
 | [Fuentes originales](docs/fuentes.json) | Hashes de los archivos inspeccionados. |
 
-Datos, originales con salidas, modelos, tracking y resultados completos se mantienen fuera de Git.
+El CSV de referencia, código, configuración y notebook sin salidas se incluyen en Git. Los datos adicionales, originales históricos, modelos, tracking, cachés y resultados generados permanecen fuera de Git.
+
+## 13. Reproducir desde un clon nuevo
+
+```bash
+git clone https://github.com/sdg850/SDG-MLOPS-PRESTAMOS.git
+cd SDG-MLOPS-PRESTAMOS
+make install
+source .venv/bin/activate
+make check-data
+make test
+make dvc
+```
+
+`make dvc` genera `models/model.joblib`, los informes de entrenamiento y un run de MLflow a partir de la fuente incluida. Para recorrer la comparación de tres experimentos y Registry, utiliza `python pipelines/run_pipeline.py` como alternativa al entrenamiento individual. El notebook también vuelve a entrenar; no es un paso obligatorio posterior.
+
+Para reproducir una revisión concreta, usa el mismo commit, Python 3.12, las dependencias declaradas y la misma configuración. El hash de la fuente está en `docs/fuentes.json`; cada manifiesto registra versiones, semilla y particiones. Los identificadores de runs, fechas y duraciones cambian entre ejecuciones. Los materiales históricos de `references/original/` son de consulta y no intervienen en la ejecución.

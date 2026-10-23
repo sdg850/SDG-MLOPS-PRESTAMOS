@@ -42,6 +42,6 @@ No se obliga a generar matrices transformadas intermedias. Imputadores, escalado
 | `make docker` | Construir e iniciar el servicio con Compose |
 | `make dvc` | Reproducir el stage de DVC |
 
-Los commits checkpoint deben agrupar cambios verificables: estructura y rutas; notebook e integraciones; pruebas y evidencia. Revisar los archivos preparados antes de cada push para conservar fuera de Git datos, modelos, originales con salidas, cachés y credenciales.
+Los commits checkpoint deben agrupar cambios verificables: estructura y rutas; notebook e integraciones; pruebas y evidencia. Revisar los archivos preparados antes de cada push para incluir el CSV de referencia y conservar fuera de Git salidas, modelos, originales con salidas, cachés y credenciales.
 
 La plantilla base se generó con CCDS 2.3.0. Parámetros y commit de referencia: `cookiecutter-generation.json`.

@@ -1,0 +1,11 @@
+{
+  "dataset": {
+    "path": "data/raw/Dataset Renovacion_prestamo.csv",
+    "sha256": "150479bd2718a023760cc1e39a41f68cee324d2c04ebe8c9bd8d0d69f13c1dab",
+    "size_bytes": 8931339,
+    "rows": 87556,
+    "columns": 22,
+    "separator": ";",
+    "storage": "git"
+  }
+}

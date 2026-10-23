@@ -51,8 +51,8 @@ def load_dataset(path: str | Path) -> pd.DataFrame:
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(
-            f"No existe el CSV: {path}. Sube el archivo autorizado a data/raw/ "
-            "o indica su ruta con --data. El CSV no se descarga desde Git."
+            f"No existe el CSV: {path}. Restaura la fuente versionada con git restore "
+            "o indica otra ruta con --data."
         )
     frame = pd.read_csv(path, sep=";")
     validate_dataset(frame)

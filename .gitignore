@@ -14,6 +14,7 @@ data/**/*
 !data/**/.gitkeep
 !data/**/*.dvc
 !data/**/.gitignore
+!data/raw/Dataset Renovacion_prestamo.csv
 models/**/*
 !models/**/
 !models/**/.gitkeep

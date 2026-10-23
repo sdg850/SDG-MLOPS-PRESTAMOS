@@ -31,3 +31,22 @@ Setuptools puede regenerar egg-info al construir o reinstalar. Esos archivos se 
 La migración mantiene SQLite y el historial existente; la estructura interna de experimentos y Registry la gestiona MLflow. No se crean directorios de versiones ficticios ni se cambia a otro backend. scripts/migrate_tracking.py rechaza un destino con estado existente y conserva una copia antes de modificar rutas.
 
 El notebook original, diccionario y presentación permanecen en references/original; el CSV en data/raw. Los modelos, logs y resultados completos permanecen fuera de Git. DVC conserva caché local y metadatos; no se configuró un remoto ni se publicaron datos. La validación técnica no acredita calidad comercial ni aprobación productiva.
+
+
+## Comandos — 23 de octubre de 2026
+
+Validación desde una copia aislada del proyecto, con instalación nueva mediante `make install`, Python 3.12 y datos sintéticos de 72 registros. No se usaron esas métricas para evaluar el caso comercial ni se sustituyeron los runs existentes.
+
+| Comprobación | Resultado |
+|---|---|
+| Instalación y entorno | `make install`, `pip check` y `check-env --include-dev` completados |
+| Pruebas | `make test`: 39 aprobadas sin omisiones |
+| Entrenamiento | `make pipeline`, `run_training.py --track` y CLI `train --tune --track` completados |
+| Notebook | `make notebook`: 18 celdas ejecutadas sin errores |
+| Experimentos | Los siete scripts numerados y `run_pipeline.py` completados; evaluación final única y reutilización del comprobante |
+| Inferencia | CLI `predict` genera CSV; API HTTP pasa readiness, paridad con bundle y campo ausente 422 |
+| MLflow UI | `make mlflow MLFLOW_PORT=15001` responde HTTP 200; un worker para reducir recursos |
+| DVC | `version-data --dvc`, `make dvc`, `dvc status` y segundo `make dvc` sin cambios completados |
+| Docker | Se detectó Docker ausente y falta de permisos para el bridge del daemon en el contenedor actual. `.devcontainer` incorpora Docker-in-Docker; requiere reconstrucción antes de validar el contenedor |
+
+`make check-data` comprueba la presencia del CSV antes de los recorridos de entrenamiento, notebook y DVC. `make api API_PORT=8001` y `make mlflow MLFLOW_PORT=5001` permiten elegir puertos libres. No se detienen servicios ajenos para liberar puertos.

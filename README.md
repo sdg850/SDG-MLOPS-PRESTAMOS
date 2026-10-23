@@ -90,6 +90,12 @@ Coloca el archivo autorizado en:
 data/raw/Dataset Renovacion_prestamo.csv
 ```
 
+Comprueba la presencia del archivo antes de entrenar:
+
+```bash
+make check-data
+```
+
 El CSV usa `;` como separador. El entrenamiento requiere las 22 columnas originales, incluidas `FLAG_VENTA`, `MES` y `CLIENTE`; estas tres columnas no se usan como predictores. La inferencia utiliza las 19 variables originales detalladas en el [diccionario](docs/diccionario.md). Las claves requeridas ausentes generan error; los nulos admitidos se procesan con los imputadores persistidos y las categorías nuevas con el encoder aprendido.
 
 Puedes indicar otra fuente con `--data "/ruta/archivo.csv"`. DVC utiliza la ruta declarada en `dvc.yaml`; pasar `--data` a otro comando no modifica esa declaración. No se generan datos sintéticos para sustituir una fuente ausente ni para informar métricas del caso.
@@ -159,7 +165,7 @@ Esta secuencia sigue **entrenar → comparar → evaluar ganador → registrar**
 
 Esta secuencia entrena tres experimentos. Sus modelos quedan en `models/experiments/` y su evidencia en `reports/experiments/`. Los scripts admiten `--help`, `--data`, `--output`, `--reports`, `--experiment` y `--tracking-uri`; la implementación actual utiliza SQLite local para Tracking y Registry.
 
-Para registrar un candidato ya seleccionado, sin repetir los entrenamientos:
+Para seleccionar, evaluar y registrar a partir de experimentos ya entrenados:
 
 ```bash
 python pipelines/04_comparar_runs.py
@@ -185,10 +191,10 @@ El modelo registrado se llama `LoanRenewal-Propensity`. Cada nuevo registro crea
 Después de generar el primer run, inicia la interfaz en otra terminal con `.venv` activa y desde la raíz:
 
 ```bash
-mlflow ui --backend-store-uri "sqlite:///$(pwd)/mlruns/mlflow.db" --host 127.0.0.1 --port 5000
+make mlflow
 ```
 
-Abre `http://127.0.0.1:5000`. En Codespaces, usa el puerto **5000** de la pestaña **Ports**. El experimento predeterminado es `loan-renewal`; permite consultar parámetros, métricas de validación, métricas finales, artefactos y versiones registradas.
+Si el puerto está ocupado, usa `make mlflow MLFLOW_PORT=5001`. Abre `http://127.0.0.1:5000` (o el puerto elegido). En Codespaces, usa el puerto **5000** de la pestaña **Ports**. El experimento predeterminado es `loan-renewal`; permite consultar parámetros, métricas de validación, métricas finales, artefactos y versiones registradas.
 
 El historial anterior de `reports/tracking/` se migró a `mlruns/` conservando SQLite, registros y artefactos. `scripts/migrate_tracking.py` existe para instalaciones antiguas: requiere que no haya tracking activo, crea un respaldo y rechaza sobrescribir un destino con estado existente. No se necesita en una instalación nueva.
 
@@ -210,7 +216,7 @@ No se construyen columnas `_LOG`, dummies o clusters a mano: el artefacto aplica
 make api
 ```
 
-Equivale a ejecutar `uvicorn api.app:app --host 127.0.0.1 --port 8000`. Abre `http://127.0.0.1:8000/docs` o el puerto **8000** de Codespaces.
+Si el puerto está ocupado, usa `make api API_PORT=8001` y comprueba el servicio con `python scripts/check_service.py --url http://127.0.0.1:8001`. Equivale a ejecutar `uvicorn api.app:app --host 127.0.0.1 --port 8000` con el puerto predeterminado. Abre `http://127.0.0.1:8000/docs` o el puerto **8000** de Codespaces.
 
 | Endpoint | Funcionalidad |
 |---|---|
@@ -228,6 +234,8 @@ python scripts/check_service.py
 La comprobación utiliza entradas sintéticas y verifica readiness, paridad offline/HTTP y respuesta `422` para un campo requerido ausente. Comprueba el funcionamiento del servicio, no el rendimiento predictivo del caso.
 
 ## 9. API con Docker
+
+El Codespace necesita Docker Engine y Compose. La configuración `.devcontainer` incorpora Docker-in-Docker; en un Codespace creado antes de este cambio ejecuta **Codespaces: Rebuild Container** para aplicarla. Comprueba `docker info` y `docker compose version`.
 
 Entrena primero para disponer de `models/model.joblib`. Utiliza esta ruta como alternativa al servidor local; ambos usan el puerto 8000.
 
@@ -280,6 +288,8 @@ El notebook histórico ya exploró todo el CSV. Repetir estas ejecuciones reprod
 |---|---|
 | `make install` | Crear entorno, instalar dependencias y registrar kernel. |
 | `make test` | Ejecutar las pruebas automatizadas. |
+| `make check-data` | Comprobar la existencia del CSV y obtener su hash. |
+| `make mlflow` | Iniciar la interfaz de MLflow en el puerto 5000. |
 | `make pipeline` | Entrenar por etapas con GridSearch y tracking. |
 | `make notebook` | Ejecutar el notebook completo y guardar una copia local con salidas. |
 | `make api` | Iniciar FastAPI con el bundle local. |
@@ -292,7 +302,7 @@ El notebook histórico ya exploró todo el CSV. Repetir estas ejecuciones reprod
 | [Diccionario](docs/diccionario.md) | Variables y contrato del dataset. |
 | [Auditoría de refactorización](docs/refactorizacion.md) | Hallazgos del notebook original y cambios metodológicos. |
 | [Estructura Cookiecutter](docs/cookiecutter.md) | Organización y adaptaciones de la  implementación. |
-| [Validación en Codespaces](docs/validacion.md) | Evidencia fechada: 34 pruebas y 18 celdas, además de API, Docker, Registry y DVC. |
+| [Validación en Codespaces](docs/validacion.md) | Evidencia fechada de comandos, 39 pruebas, notebook, API, MLflow, Registry y requisitos de Docker/DVC. |
 | [Fuentes originales](docs/fuentes.json) | Hashes de los archivos inspeccionados. |
 
 Datos, originales con salidas, modelos, tracking y resultados completos se mantienen fuera de Git.

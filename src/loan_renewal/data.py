@@ -48,7 +48,13 @@ def validate_dataset(frame: pd.DataFrame) -> dict:
 
 def load_dataset(path: str | Path) -> pd.DataFrame:
     """Read the original semicolon-delimited CSV and validate its contract."""
-    frame = pd.read_csv(Path(path), sep=";")
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"No existe el CSV: {path}. Sube el archivo autorizado a data/raw/ "
+            "o indica su ruta con --data. El CSV no se descarga desde Git."
+        )
+    frame = pd.read_csv(path, sep=";")
     validate_dataset(frame)
     return frame
 

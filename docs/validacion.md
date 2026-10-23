@@ -52,3 +52,15 @@ Validación desde una copia aislada del proyecto, con instalación nueva mediant
 `make check-data` comprueba la presencia del CSV antes de los recorridos de entrenamiento, notebook y DVC. `make api API_PORT=8001` y `make mlflow MLFLOW_PORT=5001` permiten elegir puertos libres. No se detienen servicios ajenos para liberar puertos.
 
 La reconstrucción detectó una fuente APT de Yarn obsoleta en la imagen base. `.devcontainer/Dockerfile` la retira antes de instalar Features, sin desactivar la verificación de firmas. Se comprobó que MLflow rechazaba el hostname reenviado con HTTP 403; `make mlflow` permite el hostname exacto del Codespace y mantiene el rechazo de hosts ajenos.
+
+## Fuente incluida y clon limpio — 23 de octubre de 2026
+
+El commit `4521b07` incorpora el CSV de referencia completo (8.931.339 bytes, 87.556 filas, 22 columnas). Git conserva sus bytes originales mediante `.gitattributes`; `docs/fuentes.json` documenta su identidad SHA-256. El puntero individual `.csv.dvc` se retiró: la fuente pertenece a Git y DVC reproduce las salidas de `dvc.yaml`.
+
+- 40 pruebas aprobadas, sin omisiones, incluida la comprobación de que `version-data --dvc` respeta una fuente ya versionada por Git.
+- Clon remoto nuevo de GitHub: CSV presente y hash exacto, sin descargar datos manualmente ni usar `dvc pull`.
+- `make check-data`, `version-data --dvc` y `make dvc` completados desde ese clon, utilizando el entorno Python 3.12 ya verificado.
+- Modelo, informes de etapas y tracking generados con la fuente completa del clon. Segunda ejecución DVC: mismo hash del modelo; fuente sin modificaciones.
+- `dvc.lock` actualizado con las dependencias y salidas de esta reproducción. Fechas, duración e identificadores de MLflow son propios de cada ejecución.
+
+Los materiales originales históricos de consulta no son dependencias de ejecución. El actual `docs/fuentes.json` describe el CSV distribuido; los cuatro hashes mencionados en la validación histórica anterior correspondían a los materiales locales disponibles en aquella revisión.

@@ -17,17 +17,17 @@ stages:
       size: 981
     - path: src/loan_renewal
       hash: md5
-      md5: 470fef56e5978ab9983610070ef6bd0a.dir
-      size: 76094
-      nfiles: 17
+      md5: 4016511acfe6f0aa6ea68b2e7305cddf.dir
+      size: 84514
+      nfiles: 18
     outs:
     - path: models/model.joblib
       hash: md5
-      md5: e29c2dfb5ee8e0e531588402e95de249
-      size: 461855
+      md5: 0f2ce4ab4d5a929465a249679dd44ccd
+      size: 461942
     - path: reports/training/comparison.csv
       hash: md5
-      md5: 6e74a6f928fefdaee6569c75503c62ca
+      md5: 769d8b04d20b7f9542b83a23a3256a22
       size: 1646
     - path: reports/training/data_profile.json
       hash: md5
@@ -39,17 +39,17 @@ stages:
       size: 1082
     - path: reports/training/manifest.json
       hash: md5
-      md5: a4d8511be42363829e0080fac60c4e17
-      size: 8506
+      md5: 407b6b560a8008a62b220ba2bf78cb23
+      size: 8636
     - path: reports/training/metrics.json
       hash: md5
-      md5: 3a70c4b85312f1229c3cb21cd9566366
-      size: 21820
+      md5: 79c392d56c67fa3ef90b5cb63d64defb
+      size: 21954
     - path: reports/training/stage_report.json
       hash: md5
-      md5: adb721b9614b0093c95a86ca6229fbce
-      size: 1707
+      md5: 5a2c16ae4183fc4e87a4d13e86be2d4c
+      size: 1712
     - path: reports/training/tracking.json
       hash: md5
-      md5: cb9bdc39642ed7b340bd93b370def3fb
-      size: 498
+      md5: d53ac726987ee2809e6cc17f8b990960
+      size: 503

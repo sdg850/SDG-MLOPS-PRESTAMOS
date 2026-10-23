@@ -1,0 +1,19 @@
+stages:
+  training:
+    cmd: python pipelines/run_training.py --tune --track
+    deps:
+      - data/raw/Dataset Renovacion_prestamo.csv
+      - src/loan_renewal
+      - pipelines/run_training.py
+      - pyproject.toml
+    outs:
+      - models/model.joblib
+      - reports/training/manifest.json
+      - reports/training/comparison.csv
+      - reports/training/data_profile.json
+      - reports/training/feature_contract.json
+      - reports/training/stage_report.json
+      - reports/training/tracking.json
+    metrics:
+      - reports/training/metrics.json:
+          cache: false

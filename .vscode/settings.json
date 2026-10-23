@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/src",
+    "${workspaceFolder}"
+  ],
+  "files.exclude": {
+    "**/*.egg-info": true,
+    "**/__pycache__": true
+  }
+}

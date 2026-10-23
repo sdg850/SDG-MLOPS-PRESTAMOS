@@ -1,0 +1,16 @@
+{
+  "generator": "cookiecutter-data-science",
+  "version": "2.3.0",
+  "template": "https://github.com/drivendataorg/cookiecutter-data-science",
+  "template_commit": "0f6b163cdbe3918a2c65ab57ad9fefda93976d9e",
+  "context": {
+    "project_name": "SDG-MLOPS-PRESTAMOS",
+    "repo_name": "sdg-loan-ccds",
+    "module_name": "loan_renewal"
+  },
+  "adaptations": [
+    "Retain src layout",
+    "Merge existing code; omit duplicate template examples",
+    "Private originals in references/original"
+  ]
+}
